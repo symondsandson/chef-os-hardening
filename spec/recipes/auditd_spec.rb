@@ -1,7 +1,7 @@
 # encoding: UTF-8
 
 #
-# Copyright 2014, Deutsche Telekom AG
+# Copyright 2017, Artem Sidorenko
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,14 +16,14 @@
 # limitations under the License.
 #
 
-describe 'os-hardening::pam' do
+describe 'os-hardening::auditd' do
   cached(:chef_run) do
-    ChefSpec::ServerRunner.new.converge(described_recipe)
+    ChefSpec::SoloRunner.new.converge(described_recipe)
   end
 
   subject { chef_run }
 
-  it 'remove pam-ccreds' do
-    is_expected.to remove_package('pam-ccreds')
+  it 'should install auditd' do
+    is_expected.to install_package('auditd')
   end
 end

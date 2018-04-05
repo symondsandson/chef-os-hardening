@@ -1,4 +1,5 @@
 # encoding: UTF-8
+
 #
 # Copyright 2014, Deutsche Telekom AG
 #
@@ -15,15 +16,15 @@
 # limitations under the License.
 #
 
-require_relative '../spec_helper'
-
 describe 'os-hardening::securetty' do
-  let(:chef_run) do
+  cached(:chef_run) do
     ChefSpec::ServerRunner.new.converge(described_recipe)
   end
 
+  subject { chef_run }
+
   it 'creates /etc/securetty' do
-    expect(chef_run).to create_template('/etc/securetty').with(
+    is_expected.to create_template('/etc/securetty').with(
       source: 'securetty.erb',
       user:   'root',
       group:  'root',

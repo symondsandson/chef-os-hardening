@@ -29,20 +29,25 @@ It will not:
 
 ## Requirements
 
-* Chef
+* Chef >= 12.5.1
 * Cookbooks:
   * Sander van Zoest sysctl `https://github.com/svanzoest-cookbooks/sysctl`
-  * Chef apt `https://github.com/chef-cookbooks/apt`
-  * Chef yum `https://github.com/chef-cookbooks/yum`
 
-**Note for `sysctl` usage:**
+### Platform
 
-We deprecated `sysctl` version before `0.6.0`. Future versions of this cookbook will depend on version 0.6.0 and greater. If you are going to use version 0.6.0, use `sysctl::apply` instead of `sysctl::default` in your runlist to ensure the configuration change will be applied.
+- Debian 7, 8
+- Ubuntu 14.04, 16.04
+- RHEL 6, 7
+- CentOS 6, 7
+- Oracle Linux 6, 7
+- Fedora 26, 27
+- OpenSuse Leap 42
+- Amazon Linux 1, 2
 
-*Optional*: you can use [berkshelf](http://berkshelf.com/) to install dependencies.
 
 ## Attributes
 
+* `['os-hardening']['components'][COMPONENT_NAME]` - allows the fine control over which components should be executed via default recipe. See below for more details
 * `['os-hardening']['desktop']['enable'] = false`
   true if this is a desktop system, ie Xorg, KDE/GNOME/Unity/etc
 * `['os-hardening']['network']['forwarding'] = false`
@@ -59,6 +64,9 @@ We deprecated `sysctl` version before `0.6.0`. Future versions of this cookbook 
   maximum password age
 * `['os-hardening']['auth']['pw_min_age'] = 7`
   minimum password age (before allowing any other password change)
+* `['os-hardening']['auth']['pw_warn_age'] = 7`
+  number of days before maximum password age occurs to warn of impending
+  change
 * `['os-hardening']['auth']['retries'] = 5`
   the maximum number of authentication attempts, before the account is locked for some time
 * `['os-hardening']['auth']['lockout_time'] = 600`
@@ -71,10 +79,18 @@ We deprecated `sysctl` version before `0.6.0`. Future versions of this cookbook 
   true if you want to use strong password checking in PAM using passwdqc
 * `['os-hardening']['auth']['pam']['passwdqc']['options'] = "min=disabled,disabled,16,12,8"`
   set to any option line (as a string) that you want to pass to passwdqc
+* `['os-hardening']['auth']['pam']['passwdqc']['template_cookbook'] = 'os-hardening'`
+  set to the name of the cookbook from which the template is obtained for the `/usr/share/pam-configs/passwdqc` file
+* `['os-hardening']['auth']['pam']['tally2']['template_cookbook'] = 'os-hardening'`
+  set to the name of the cookbook from which the template is obtained for the `/usr/share/pam-configs/tally2` file
+* `['os-hardening']['auth']['pam']['system-auth']['template_cookbook'] = 'os-hardening'`
+  set to the name of the cookbook from which the template is obtained for the `/etc/pam.d/system-auth-ac` file
 * `['os-hardening']['security']['users']['allow'] = []`
   list of things, that a user is allowed to do. May contain: `change_user`
 * `['os-hardening']['security']['kernel']['enable_module_loading'] = true`
   true if you want to allowed to change kernel modules once the system is running (eg `modprobe`, `rmmod`)
+* `['os-hardening']['security']['kernel']['disable_filesystems'] = ['cramfs', 'freevxfs', 'jffs2', 'hfs', 'hfsplus', 'squashfs', 'udf', 'vfat']`
+  list of kernel file system modules, which are blacklisted for loading (e.g. they are unused and can be disabled). Set this to `[]` to completely avoid this blacklisting
 * `['os-hardening']['security']['kernel']['enable_sysrq'] = false`
 * `['os-hardening']['security']['kernel']['enable_core_dump'] = false`
 * `['os-hardening']['security']['suid_sgid']['enforce'] = true`
@@ -98,6 +114,24 @@ We deprecated `sysctl` version before `0.6.0`. Future versions of this cookbook 
   * ypserv ([NSA](http://www.nsa.gov/ia/_files/os/redhat/rhel5-guide-i731.pdf), Chapter 3.2.4)
   * telnet-server ([NSA](http://www.nsa.gov/ia/_files/os/redhat/rhel5-guide-i731.pdf), Chapter 3.2.2)
   * rsh-server ([NSA](http://www.nsa.gov/ia/_files/os/redhat/rhel5-guide-i731.pdf), Chapter 3.2.3)
+* `['os-hardening']['security']['selinux_mode'] = 'unmanaged'`
+  set to `unmanaged` if you want to let selinux configuration as it is. Set to `enforcing` to enforce or `permissive` to permissive SELinux.
+
+### Controlling the included components
+
+`default.rb` includes other components based on the ohai autodetection attributes of your system. E.g. do not execute selinux on non-RHEL systems. You can override this behavior and force components to be executed or not via setting attributes in `node['os-hardening']['components']` on the override level. Example
+
+```ruby
+# some attribute file
+# do not include sysctl and auditd
+override['os-hardening']['components']['sysctl'] = false
+override['os-hardening']['components']['auditd'] = false
+
+# force selinux to be included
+override['os-hardening']['components']['selinux'] = true
+```
+
+In the current implementation different components are located in the different recipes. See the available recipes or `default.rb` for possible component names.
 
 ## Usage
 
@@ -115,46 +149,44 @@ Configure attributes:
 
 ## Local Testing
 
-For local testing you can use vagrant and Virtualbox of VMWare to run tests locally. You will have to install Virtualbox and Vagrant on your system. See [Vagrant Downloads](http://downloads.vagrantup.com/) for a vagrant package suitable for your system. For all our tests we use `test-kitchen`. If you are not familiar with `test-kitchen` please have a look at [their guide](http://kitchen.ci/docs/getting-started).
+### Local testing
 
-Next install test-kitchen:
+Please install [chef-dk](https://downloads.chef.io/chefdk), [VirtualBox](https://www.virtualbox.org/) or VMware Workstation and [Vagrant](https://www.vagrantup.com/).
 
-    gem install test-kitchen kitchen-vagrant
-
-Next install berkshelf for dependency management
-
-    gem install berkshelf
-
-Create a local kitchen configuration:
-
-    cp .kitchen.local.yml{.example,}
-
-You should now be able to run tests:
+Linting is checked with [rubocop](https://github.com/bbatsov/rubocop) and [foodcritic](http://www.foodcritic.io/):
 
 ```bash
-# Install dependencies
-gem install bundler
-bundle install
-
-# Do lint checks
-bundle exec rake lint
-
-# fast test on one machine
-bundle exec kitchen test default-ubuntu-1204
-
-# test on all machines
-bundle exec kitchen test
-
-# for development, it uses docker based vms
-bundle exec kitchen create default-ubuntu-1204
-bundle exec kitchen converge default-ubuntu-1204
-
-# if you like to use the vagrant setup, use
-KITCHEN_YAML=.kitchen.vagrant.yml bundle exec kitchen converge default-ubuntu-1404
+$ chef exec rake lint
+.....
 ```
 
-http://kitchen.ci/docs/getting-started
+Unit/spec tests are done with [chefspec](https://github.com/sethvargo/chefspec):
 
+```bash
+$ chef exec rake spec
+.....
+```
+
+Integration tests are done with [test-kitchen](http://kitchen.ci/) and [inspec](https://www.inspec.io/):
+
+```bash
+$ chef exec rake kitchen
+.....
+# or you can use the kitchen directly
+$ kitchen test
+```
+
+### CI testing of forks
+
+You can enable testing of your fork in [Travis CI](http://travis-ci.org/). By default you will get linting, spec tests and integration tests with [kitchen-dokken].
+
+Integration tests with [kitchen-dokken] do not cover everything as they run in the container environment.
+Full integration tests can be executed using [DigitalOcean](http://digitalocean.com/).
+
+If you want to have full integration tests for your fork, you will have to add following [environment variables](https://docs.travis-ci.com/user/environment-variables/#Defining-Variables-in-Repository-Settings) in the settings of your fork:
+- `DIGITALOCEAN_ACCESS_TOKEN` - [access token for DigitalOcean](https://www.digitalocean.com/community/tutorials/how-to-use-the-digitalocean-api-v2)
+- `CI_SSH_KEY` - private part of some ssh key, available on DigitalOcean for your instances, in base64 encoded form (e.g. `cat id_rsa | base64 -w0 ; echo`)
+- `DIGITALOCEAN_SSH_KEY_IDS` - ID in DigitalOcean of `CI_SSH_KEY`, see [this](https://github.com/test-kitchen/kitchen-digitalocean#installation-and-setup) for more information
 
 ## Contributors + Kudos
 
@@ -163,13 +195,15 @@ http://kitchen.ci/docs/getting-started
 * Christoph Hartmann [chris-rock](https://github.com/chris-rock)
 * Edmund Haselwanter [ehaselwanter](https://github.com/ehaselwanter)
 * Patrick Meier [atomic111](https://github.com/atomic111)
+* Artem Sidorenko [artem-sidorenko](https://github.com/artem-sidorenko)
 
 This cookbook is mostly based on guides by:
 
 * [Arch Linux wiki, Sysctl hardening](https://wiki.archlinux.org/index.php/Sysctl)
-* [NSA: Guide to the Secure Configuration of Red Hat Enterprise Linux 5](http://www.nsa.gov/ia/_files/os/redhat/rhel5-guide-i731.pdf)
 * [Ubuntu Security/Features](https://wiki.ubuntu.com/Security/Features)
-* [Deutsche Telekom, Group IT Security, Security Requirements (German)](http://www.telekom.com/static/-/155996/7/technische-sicherheitsanforderungen-si)
+* [NSA: Guide to the Secure Configuration of Red Hat Enterprise Linux 5](https://www.iad.gov/iad/library/ia-guidance/security-configuration/operating-systems/guide-to-the-secure-configuration-of-red-hat-enterprise.cfm)
+* [Deutsche Telekom, Group IT Security, Security Requirements (German)](https://www.telekom.com/psa)
+
 
 Thanks to all of you!!
 
@@ -199,3 +233,4 @@ limitations under the License.
 [3]: https://coveralls.io/r/dev-sec/chef-os-hardening
 [4]: https://gemnasium.com/dev-sec/chef-os-hardening
 [5]: https://gitter.im/dev-sec/general
+[kitchen-dokken]: https://github.com/someara/kitchen-dokken

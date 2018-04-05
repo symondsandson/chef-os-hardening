@@ -1,4 +1,5 @@
 # encoding: utf-8
+
 #
 # Cookbook Name: os-hardening
 # Recipe: pack_yum.rb
@@ -17,8 +18,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-include_recipe 'yum'
 
 # NSA chapter: NSA 2.1.2.3.3
 # verify package signatures
@@ -44,7 +43,7 @@ end
 if node['os-hardening']['security']['packages']['clean']
 
   # remove unused repos
-  %w(CentOS-Debuginfo CentOS-Media CentOS-Vault).each do |repo|
+  %w[CentOS-Debuginfo CentOS-Media CentOS-Vault].each do |repo|
     yum_repository repo do
       action :remove
     end
@@ -52,7 +51,7 @@ if node['os-hardening']['security']['packages']['clean']
 
   # remove packages
   node['os-hardening']['security']['packages']['list'].each do |pkg|
-    yum_package pkg do
+    package pkg do
       action :purge
     end
   end

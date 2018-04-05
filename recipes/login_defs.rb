@@ -1,4 +1,5 @@
 # encoding: utf-8
+
 #
 # Cookbook Name: os-hardening
 # Recipe: login_defs.rb
@@ -28,6 +29,7 @@ template '/etc/login.defs' do
     umask: node['os-hardening']['env']['umask'],
     password_max_age: node['os-hardening']['auth']['pw_max_age'],
     password_min_age: node['os-hardening']['auth']['pw_min_age'],
+    password_warn_age: node['os-hardening']['auth']['pw_warn_age'],
     login_retries: node['os-hardening']['auth']['retries'],
     login_timeout: node['os-hardening']['auth']['timeout'],
     chfn_restrict: '', # "rwh"

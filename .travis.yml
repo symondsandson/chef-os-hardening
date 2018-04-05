@@ -1,8 +1,56 @@
 ---
-rvm:
-- 2.3.1
+sudo: required
 language: ruby
-bundler_args: "--without development integration"
-gemfile:
-- Gemfile
-- gemfile.chef-11
+bundler_args: "--without development"
+dist: trusty
+cache: bundler
+
+services:
+- docker
+
+rvm: 2.4.1
+
+before_install:
+  - gem update --system # see https://github.com/bundler/bundler/issues/5357
+
+env:
+ - INSTANCE=ubuntu-14-04 KITCHEN_LOCAL_YAML=.kitchen.do.yml
+ - INSTANCE=ubuntu-16-04 KITCHEN_LOCAL_YAML=.kitchen.do.yml
+ - INSTANCE=ubuntu-16-04 CHEF_VERSION=12.14.60 KITCHEN_LOCAL_YAML=.kitchen.do.yml
+ - INSTANCE=centos-6 KITCHEN_LOCAL_YAML=.kitchen.do.yml
+ - INSTANCE=centos-7 KITCHEN_LOCAL_YAML=.kitchen.do.yml
+ - INSTANCE=centos-7 CHEF_VERSION=12.14.60 KITCHEN_LOCAL_YAML=.kitchen.do.yml
+ - INSTANCE=debian-7 KITCHEN_LOCAL_YAML=.kitchen.do.yml
+ - INSTANCE=debian-8 KITCHEN_LOCAL_YAML=.kitchen.do.yml
+ - INSTANCE=fedora-26 KITCHEN_LOCAL_YAML=.kitchen.do.yml
+ - INSTANCE=fedora-27 KITCHEN_LOCAL_YAML=.kitchen.do.yml
+ - INSTANCE=ubuntu-14-04 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+ - INSTANCE=ubuntu-16-04 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+ - INSTANCE=ubuntu-16-04 CHEF_VERSION=12.14.60 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+ - INSTANCE=centos-6 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+ - INSTANCE=centos-7 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+ - INSTANCE=centos-7 CHEF_VERSION=12.14.60 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+ - INSTANCE=oracle-6 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+ - INSTANCE=oracle-7 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+ - INSTANCE=debian-7 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+ - INSTANCE=debian-8 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+ - INSTANCE=fedora-26 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+ - INSTANCE=fedora-27 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+ - INSTANCE=opensuse-42 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+ - INSTANCE=amazonlinux-1 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+ - INSTANCE=amazonlinux-2 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+
+script:
+  -  bundle exec rake kitchen
+
+matrix:
+  allow_failures: # temporaray disable failing tests until all problems are fixed
+    - env: INSTANCE=ubuntu-16-04 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+    - env: INSTANCE=ubuntu-16-04 CHEF_VERSION=12.14.60 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+    - env: INSTANCE=centos-7 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+    - env: INSTANCE=centos-7 CHEF_VERSION=12.14.60 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+    - env: INSTANCE=opensuse-42 KITCHEN_LOCAL_YAML=.kitchen.dokken.yml
+  include:
+    - env: UNIT_AND_LINT=1
+      script:
+        - bundle exec rake lint spec

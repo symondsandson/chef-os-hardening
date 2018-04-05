@@ -1,7 +1,10 @@
-# encoding: UTF-8
+# encoding: utf-8
 
 #
-# Copyright 2014, Deutsche Telekom AG
+# Cookbook Name: os-hardening
+# Recipe: auditd.rb
+#
+# Copyright 2017, Artem Sidorenko
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -16,14 +19,4 @@
 # limitations under the License.
 #
 
-describe 'os-hardening::pam' do
-  cached(:chef_run) do
-    ChefSpec::ServerRunner.new.converge(described_recipe)
-  end
-
-  subject { chef_run }
-
-  it 'remove pam-ccreds' do
-    is_expected.to remove_package('pam-ccreds')
-  end
-end
+package node['os-hardening']['packages']['auditd']

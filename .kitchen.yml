@@ -1,70 +1,81 @@
 ---
-driver:
-  name: dokken
-  chef_version: 12.5.1
-  privileged: true # because Docker and SystemD/Upstart
 
-transport:
-  name: dokken
+driver:
+  name: vagrant
+
+platforms:
+- name: ubuntu-14-04
+  driver_config:
+    box: bento/ubuntu-14.04
+- name: ubuntu-16-04
+  driver_config:
+    box: bento/ubuntu-16.04
+- name: centos-6
+  driver_config:
+    box: bento/centos-6.9
+- name: centos-7
+  driver_config:
+    box: bento/centos-7.4
+- name: oracle-6
+  driver_config:
+    box: bento/oracle-6.9
+- name: oracle-7
+  driver_config:
+    box: bento/oracle-7.3
+- name: debian-7
+  driver_config:
+    box: bento/debian-7.11
+- name: debian-8
+  driver_config:
+    box: bento/debian-8.6
+- name: fedora-26
+  driver_config:
+    box: bento/fedora-26
+- name: fedora-27
+  driver_config:
+    box: bento/fedora-27
+- name: opensuse-leap-42
+  driver_config:
+    box: bento/opensuse-leap-42.1
+- name: amazonlinux-1
+  driver_config:
+    box: realreadme/amazon2016.09
+- name: amazonlinux-2
+  driver_config:
+    box: stakahashi/amazonlinux2
 
 provisioner:
-  name: dokken
+  name: chef_solo
+<% if ENV['CHEF_VERSION'] %>
+  require_chef_omnibus: <%= ENV['CHEF_VERSION'] %>
+<% end %>
 
 verifier:
   name: inspec
-  sudo: false
-
-platforms:
-- name: ubuntu-12.04
-  driver:
-    image: ubuntu:12.04
-- name: ubuntu-14.04
-  driver:
-    image: ubuntu:14.04
-- name: ubuntu-16.06
-  driver:
-    image: ubuntu:16.04
-    pid_one_command: /bin/systemd
-- name: centos-6.8
-  driver:
-    image: centos:6.8
-    intermediate_instructions:
-      - RUN yum install -y initscripts
-- name: centos-7
-  driver:
-    image: centos:7
-    pid_one_command: /usr/lib/systemd/systemd
-- name: oracle-6.6
-  driver:
-    image: oraclelinux:6.6
-- name: oracle-6.7
-  driver:
-    image: oraclelinux:6.7
-- name: oracle-7.1
-  driver:
-    image: oraclelinux:7.1
-    pid_one_command: /usr/lib/systemd/systemd
-- name: debian-6
-  driver:
-    image: debian:6
-    intermediate_instructions:
-    - RUN /usr/bin/apt-get update
-    - RUN /usr/bin/apt-get install -y procps
-- name: debian-7
-  driver:
-    image: debian:7
-    intermediate_instructions:
-    - RUN /usr/bin/apt-get update
-    - RUN /usr/bin/apt-get install -y procps
-- name: debian-8
-  driver:
-    image: debian:8
-    pid_one_command: /bin/systemd
 
 suites:
 - name: default
   run_list:
   - recipe[os-hardening::default]
+- name: modules_disabled
+  run_list:
+  - recipe[os-hardening::default]
+  attributes:
+    os-hardening:
+      security:
+        kernel:
+          enable_module_loading: false
   verifier:
     inspec_tests:
-    - https://github.com/dev-sec/tests-os-hardening
+    - path: test/integration/default
+    attributes:
+      kernel_modules_disabled: 1
+- name: selinux_enabled
+  run_list:
+  - recipe[os-hardening::default]
+  includes:
+    - centos-7
+  attributes:
+    os-hardening:
+      security:
+        selinux_mode: enforcing

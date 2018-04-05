@@ -1,4 +1,5 @@
 # encoding: utf-8
+
 #
 # Cookbook Name: os-hardening
 # Recipe: packages.rb
@@ -26,6 +27,6 @@ end
 
 # do package config for rhel-family
 case node['platform_family']
-when 'rhel', 'fedora'
+when 'rhel', 'fedora', 'amazon'
   include_recipe('os-hardening::yum')
 end

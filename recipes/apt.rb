@@ -1,4 +1,5 @@
 # encoding: utf-8
+
 #
 # Cookbook Name: os-hardening
 # Recipe: apt.rb
@@ -17,8 +18,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
-include_recipe 'apt'
 
 # apt-get and aptitude check package signatures by default.
 # TODO: could check apt.conf to make sure this hasn't been disabled.

@@ -1,4 +1,5 @@
 # encoding: utf-8
+
 #
 # Cookbook Name: os-hardening
 # Recipe: profile.rb
@@ -23,5 +24,7 @@ template '/etc/profile.d/pinerolo_profile.sh' do
   mode 0755
   owner 'root'
   group 'root'
-  not_if { node['os-hardening']['security']['kernel']['enable_core_dump'] }
+  if node['os-hardening']['security']['kernel']['enable_core_dump']
+    action :delete
+  end
 end

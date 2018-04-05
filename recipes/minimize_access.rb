@@ -1,4 +1,5 @@
 # encoding: utf-8
+
 #
 # Cookbook Name: os-hardening
 # Recipe: minimize_access
@@ -20,7 +21,7 @@
 
 # remove write permissions from path folders ($PATH) for all regular users
 # this prevents changing any system-wide command from normal users
-paths = %w(/usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin) + node['os-hardening']['env']['extra_user_paths']
+paths = %w[/usr/local/sbin /usr/local/bin /usr/sbin /usr/bin /sbin /bin] + node['os-hardening']['env']['extra_user_paths']
 paths.each do |folder|
   execute "remove write permission from #{folder}" do
     command "chmod go-w -R #{folder}"
@@ -28,11 +29,21 @@ paths.each do |folder|
   end
 end
 
-# shadow must only be accessible to user root
+# limit access to shadow. On debian family group shadow should be able to read it
+# (otherwise screensavers might break etc)
 file '/etc/shadow' do
   owner 'root'
-  group 'root'
-  mode '0600'
+  case node['platform_family']
+  when 'rhel', 'fedora', 'amazon'
+    group 'root'
+    mode '0000'
+  when 'debian'
+    group 'shadow'
+    mode '0640'
+  else
+    group 'root'
+    mode '0600'
+  end
 end
 
 # su must only be accessible to user and group root
@@ -41,4 +52,15 @@ file '/bin/su' do
   group 'root'
   mode '0750'
   not_if { node['os-hardening']['security']['users']['allow'].include?('change_user') }
+end
+
+# /var/log should restricted to root or syslog on ubuntu systems
+directory '/var/log' do
+  owner 'root'
+  # ubuntu with containers does not have rsyslog installed and syslog group does not exist
+  if node['platform'] == 'ubuntu' && node['packages']['rsyslog']
+    group 'syslog'
+  else
+    group 'root'
+  end
 end

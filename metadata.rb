@@ -1,4 +1,5 @@
 # encoding: utf-8 # ~FC061
+
 #
 # Copyright 2014, Deutsche Telekom AG
 #
@@ -18,20 +19,24 @@
 name             'os-hardening'
 maintainer       'Dominik Richter'
 maintainer_email 'dominik.richter@googlemail.com'
-license          'Apache 2.0'
+license          'Apache-2.0'
 description      'Installs and configures operating system hardening'
 long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
-version          '2.0.1'
+version          '3.0.1'
 
-supports 'ubuntu', '>= 12.04'
+chef_version '>= 12.5' if respond_to?(:chef_version)
+
+supports 'amazon'
+supports 'ubuntu', '>= 14.04'
 supports 'debian', '>= 6.0'
-supports 'centos', '>= 5.0'
-supports 'redhat', '>= 5.0'
+supports 'centos', '>= 6.0'
+supports 'redhat', '>= 6.0'
 supports 'oracle', '>= 6.4'
+supports 'fedora', '>= 26.0'
+supports 'suse'
+supports 'opensuseleap', '>= 42.1'
 
-depends 'sysctl', '~> 0.8'
-depends 'apt', '~> 3.0.0'
-depends 'yum'
+depends 'sysctl', '~> 1.0'
 
 recipe 'os-hardening::default', 'harden the operating system (all recipes)'
 recipe 'os-hardening::limits', 'prevent core dumps'
